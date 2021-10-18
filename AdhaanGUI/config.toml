@@ -1,0 +1,15 @@
+theme = "Default"
+method = "Karachi"
+location_name = "Rajshahi"
+
+[coordinates]
+latitude = 24.383144
+longitude = 88.583183
+
+[user_adjustments]
+fajr = 0
+sunrise = 0
+dhuhr = 0
+asr = 0
+maghrib = 0
+isha = 0
