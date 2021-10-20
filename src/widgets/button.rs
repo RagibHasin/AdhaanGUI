@@ -16,8 +16,6 @@ const ICON_BUTTON_INSETS: Insets = Insets::uniform(2.);
 pub struct Button<T> {
     label: Label<T>,
     label_size: Size,
-    hot_color: KeyOrValue<Color>,
-    active_color: KeyOrValue<Color>,
 }
 
 impl<T: Data> Button<T> {
@@ -63,8 +61,6 @@ impl<T: Data> Button<T> {
         Button {
             label,
             label_size: Size::ZERO,
-            active_color: theme::BUTTON_LIGHT.into(),
-            hot_color: theme::DISABLED_BUTTON_LIGHT.into(),
         }
     }
 
@@ -91,16 +87,6 @@ impl<T: Data> Button<T> {
     pub fn dynamic(text: impl Fn(&T, &Env) -> String + 'static) -> Self {
         let text: LabelText<T> = text.into();
         Button::new(text)
-    }
-
-    pub fn with_active_color(mut self, color: impl Into<KeyOrValue<Color>>) -> Self {
-        self.active_color = color.into();
-        self
-    }
-
-    pub fn with_hot_color(mut self, color: impl Into<KeyOrValue<Color>>) -> Self {
-        self.hot_color = color.into();
-        self
     }
 
     /// Provide a closure to be called when this button is clicked.
@@ -169,13 +155,13 @@ impl<T: Data> Widget<T> for Button<T> {
             .inset(-stroke_width / 2.0)
             .to_rounded_rect(env.get(theme::BUTTON_BORDER_RADIUS));
 
-        let bg_color = if is_active {
-            self.active_color.resolve(env)
+        let bg_color = env.get(if is_active {
+            theme::BUTTON_LIGHT
         } else if is_hot {
-            self.hot_color.resolve(env)
+            theme::DISABLED_BUTTON_LIGHT
         } else {
-            env.get(theme::WINDOW_BACKGROUND_COLOR)
-        };
+            theme::WINDOW_BACKGROUND_COLOR
+        });
 
         ctx.fill(rounded_rect, &bg_color);
 

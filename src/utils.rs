@@ -24,17 +24,29 @@ pub fn config_path() -> PathBuf {
     config_path
 }
 
-pub fn theme_dir() -> PathBuf {
-    let mut theme_dir = appdata_dir();
-    theme_dir.push("themes");
-    theme_dir
-}
-
-#[derive(Debug, Clone, druid::Data)]
-pub struct DataDuration(#[data(same_fn = "PartialEq::eq")] pub chrono::Duration);
-
 mod ui {
-    use druid::{widget::Label, Data, FontDescriptor, FontFamily, FontWeight};
+    use druid::{
+        lens::Identity,
+        widget::{Label, LabelText},
+        Data, FontDescriptor, FontFamily, FontWeight, Lens, LensExt, LocalizedString,
+    };
+
+    pub fn lens_map_get<T, U>(lens_map: impl Fn(&T) -> U) -> impl Lens<T, U> {
+        Identity.map(lens_map, |_, _| {})
+    }
+
+    pub fn localized_label<T>(label: &'static str) -> LabelText<T> {
+        LocalizedString::new(label).with_placeholder(label).into()
+    }
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct DataWrapper<T: PartialEq + Clone>(pub T);
+
+    impl<T: PartialEq + Clone + 'static> Data for DataWrapper<T> {
+        fn same(&self, other: &Self) -> bool {
+            self.0 == other.0
+        }
+    }
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub enum Icon {

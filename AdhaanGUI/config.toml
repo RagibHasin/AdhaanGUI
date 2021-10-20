@@ -1,6 +1,14 @@
-theme = "Default"
+font = "Segoe UI Variable Display"
+dark_mode = true
+
 method = "Karachi"
 location_name = "Rajshahi"
+
+critical_at = 15
+ishraq = [15, 5]
+
+[asr]
+mode = "DhuhrEndsAtAsrThaaniButAsrStartsAtAsrAwwal"
 
 [coordinates]
 latitude = 24.383144

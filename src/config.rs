@@ -3,10 +3,15 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Data)]
 pub struct Config {
-    pub theme: String,
+    pub font: String,
+    pub dark_mode: bool,
+
     #[data(same_fn = "PartialEq::eq")]
     pub method: AvailableMethods,
     pub location_name: Option<String>,
+    pub critical_at: u8,
+    pub ishraq: Option<(u8, u8)>,
+    pub asr: AsrConfig,
 
     #[serde(with = "remote_defs::Coordinates")]
     #[data(same_fn = "PartialEq::eq")]
@@ -30,45 +35,13 @@ impl Config {
             Ok(config)
         }
     }
-}
 
-impl Default for Config {
-    fn default() -> Self {
-        Config {
-            theme: "Default".into(),
-
-            coordinates: adhaan::Coordinates {
-                latitude: 21.422487,
-                longitude: 39.826206,
-            },
-            location_name: Some("Kaaba".into()),
-
-            method: AvailableMethods::UmmAlQura,
-            user_adjustments: adhaan::TimeAdjustment::default(),
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Theme {
-    pub font: String,
-    pub dark_mode: bool,
-    pub transparency: bool,
-}
-
-impl Theme {
-    pub fn load(theme: &str) -> anyhow::Result<Theme> {
-        let mut theme_file = crate::utils::theme_dir();
-        theme_file.push(theme);
-        theme_file.set_extension("theme.toml");
-        Ok(toml::from_slice(&std::fs::read(theme_file)?)?)
-    }
-
-    pub fn apply_to_env(self, env: &mut druid::Env) {
-        use crate::ui::color;
+    pub fn apply_appearance_to_env(&self, env: &mut druid::Env) {
+        use crate::ui_main::color;
         use druid::{theme, Color};
 
-        let font_family = druid::FontDescriptor::new(druid::FontFamily::new_unchecked(self.font));
+        let font_family =
+            druid::FontDescriptor::new(druid::FontFamily::new_unchecked(self.font.as_str()));
         env.set(
             theme::UI_FONT_BOLD,
             font_family.clone().with_weight(druid::FontWeight::BOLD),
@@ -78,6 +51,7 @@ impl Theme {
             font_family.clone().with_style(druid::FontStyle::Italic),
         );
         env.set(theme::UI_FONT, font_family);
+
         if !self.dark_mode {
             env.set(theme::WINDOW_BACKGROUND_COLOR, Color::grey(0.84));
             env.set(theme::TEXT_COLOR, Color::BLACK);
@@ -92,8 +66,8 @@ impl Theme {
             env.set(color::ELAPSED_OKAY, Color::from_rgba32_u32(0xFFDC61_FF));
             env.set(color::REMAINING, Color::from_rgba32_u32(0x00FFA6_FF));
 
-            env.set(color::CLOSE_HOT, Color::rgb8(196, 43, 28));
-            env.set(color::CLOSE_ACTIVE, Color::rgb8(178, 42, 27));
+            env.set(color::CLOSE_HOT, Color::rgb8(216, 44, 29));
+            env.set(color::CLOSE_ACTIVE, Color::rgb8(196, 43, 28));
         } else {
             env.set(color::ELAPSED_CRITICAL, Color::from_rgba32_u32(0x7B2E15_FF));
             env.set(color::ELAPSED_OKAY, Color::from_rgba32_u32(0x735C00_FF));
@@ -105,17 +79,42 @@ impl Theme {
     }
 }
 
-impl Default for Theme {
+pub const KAABA_COORDINATES: adhaan::Coordinates = adhaan::Coordinates {
+    latitude: 21.422487,
+    longitude: 39.826206,
+};
+pub const DEFAULT_ISHRAQ_VALUE: (u8, u8) = (15, 10);
+
+impl Default for Config {
     fn default() -> Self {
-        Theme {
-            font: "Segoe UI Variable Display".into(),
+        Config {
+            font: "Segoe UI".into(),
             dark_mode: true,
-            transparency: false,
+
+            method: AvailableMethods::UmmAlQura,
+
+            critical_at: 15,
+
+            ishraq: Some(DEFAULT_ISHRAQ_VALUE),
+            asr: AsrConfig::DhuhrEndsAtAsrAwwal,
+
+            coordinates: KAABA_COORDINATES,
+            location_name: Some("Kaaba".into()),
+
+            user_adjustments: adhaan::TimeAdjustment::default(),
         }
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Copy, Data)]
+#[serde(tag = "mode", content = "show_both")]
+pub enum AsrConfig {
+    DhuhrEndsAtAsrAwwal,
+    DhuhrEndsAtAsrThaaniButAsrStartsAtAsrAwwal,
+    AsrStartsAtAsrThaani(bool),
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Copy, Data)]
 pub enum AvailableMethods {
     Dubai,
     Egyptian,
